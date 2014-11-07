@@ -1,103 +1,107 @@
 package com.stanislavsikorsyi.playingwithmaterialdesign;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.ResolveInfo;
+import android.app.ActionBar;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.GridView;
-import android.widget.ImageView;
-
-import java.util.List;
+import android.support.v13.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.ViewPager;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
 
-    GridView mGrid;
-    private List<ResolveInfo> mApps;
-
+    // When requested, this adapter returns a DemoObjectFragment,
+    // representing an object in the collection.
+    DemoCollectionPagerAdapter mDemoCollectionPagerAdapter;
+    ViewPager mViewPager;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loadApps(); // do this in onresume?
-        mGrid = (GridView) findViewById(R.id.gridview);
-        mGrid.setAdapter(new AppsAdapter());
-
-    }
-    private void loadApps() {
-        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        mApps = getPackageManager().queryIntentActivities(mainIntent, 0);
-    }
-
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+        // ViewPager and its adapters use support library
+        // fragments, so use getSupportFragmentManager.
+        mDemoCollectionPagerAdapter =
+                new DemoCollectionPagerAdapter(
+                        getFragmentManager());
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(mDemoCollectionPagerAdapter);
+        mViewPager.setOnPageChangeListener(
+                new ViewPager.SimpleOnPageChangeListener() {
+                    @Override
+                    public void onPageSelected(int position) {
+                        // When swiping between pages, select the
+                        // corresponding tab.
+                        getActionBar().setSelectedNavigationItem(position);
+                    }
+                });
 
 
-    public class AppsAdapter extends BaseAdapter {
+        final ActionBar actionBar = getActionBar();
 
-        public AppsAdapter() {
-        }
 
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ImageView imageView;
+        // Specify that tabs should be displayed in the action bar.
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 
-            if (convertView == null) {
-                imageView = new ImageView(MainActivity.this);
-                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                imageView.setLayoutParams(new GridView.LayoutParams(150, 150));
-            } else {
-                imageView = (ImageView) convertView;
+        // Create a tab listener that is called when the user changes tabs.
+        ActionBar.TabListener tabListener = new ActionBar.TabListener() {
+            public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
+                mViewPager.setCurrentItem(tab.getPosition());
             }
 
-            ResolveInfo info = mApps.get(position);
-            imageView.setImageDrawable(info.activityInfo.loadIcon(getPackageManager()));
+            public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction ft) {
+                // hide the given tab
+            }
 
-            return imageView;
+            public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
+                // probably ignore this event
+            }
+        };
+
+        // Add 3 tabs, specifying the tab's text and TabListener
+        for (int i = 0; i < 2; i++) {
+            actionBar.addTab(
+                    actionBar.newTab()
+                            .setText("Tab " + (i + 1))
+                            .setTabListener(tabListener));
         }
 
-
-        public final int getCount() {
-            return mApps.size();
-        }
-
-        public final Object getItem(int position) {
-            return mApps.get(position);
-        }
-
-        public final long getItemId(int position) {
-            return position;
-        }
     }
 
+    // Since this is an object collection, use a FragmentStatePagerAdapter,
+    // and NOT a FragmentPagerAdapter.
+    public class DemoCollectionPagerAdapter extends FragmentPagerAdapter {
 
 
+        public DemoCollectionPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int i) {
+            Fragment fragment = null;
+            if(i == 0) {
+                fragment  = new AppsFragment();
+            } else if (i == 1) {
+                fragment  = new ContactsFragment();
+            }
+            Bundle args = new Bundle();
+            // Our object is just an integer :-P
+            fragment.setArguments(args);
+            return fragment;
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return "OBJECT " + (position + 1);
+        }
+    }
 }
